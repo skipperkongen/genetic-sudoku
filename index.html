@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Genetic Sudoku</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <h1>Genetic Sudoku</h1>
+    <blockquote>
+      <p>This is reproduction of an algorithm I designed at university during an AI course in 2007.</p>
+    </blockquote>
+    <p class="lede">
+      A genetic algorithm solves the puzzle. Each candidate is a full board with nine of every digit;
+      mutation swaps two non-fixed cells. Fitness counts rule violations, and 0 means solved.
+    </p>
+
+    <div class="controls">
+      <label>
+        Difficulty
+        <select id="difficulty">
+          <option value="45" selected>Easy (45 givens)</option>
+          <option value="40">Medium (40 givens)</option>
+          <option value="34">Hard (34 givens)</option>
+        </select>
+      </label>
+      <button id="new">New board</button>
+      <button id="solve" class="primary">Solve</button>
+    </div>
+
+    <div id="board" class="board" aria-label="Sudoku board"></div>
+
+    <dl class="stats">
+      <div><dt>Generation</dt><dd id="generation">0</dd></div>
+      <div><dt>Min fitness</dt><dd id="fitness">–</dd></div>
+      <div><dt>Best ever</dt><dd id="best">–</dd></div>
+      <div><dt>Restarts</dt><dd id="restarts">0</dd></div>
+    </dl>
+    <p id="status" class="status"></p>
+
+    <section>
+      <h2>Best chromosome</h2>
+      <p class="hint">The current best individual, row by row. Fixed digits from the puzzle are dimmed.</p>
+      <div id="chromosome" class="chromosome"></div>
+    </section>
+
+    <section class="explainer">
+      <h2>How the algorithm works</h2>
+      <p>
+        A genetic algorithm keeps a population of candidate boards and improves them over many
+        generations. It copies the better ones with small random changes, and the worse ones die out.
+      </p>
+      <ol>
+        <li>
+          <strong>Candidates.</strong> Each candidate is a complete 81-cell board. The puzzle's given
+          digits stay in their cells, and the remaining digits are shuffled over the empty cells. Every
+          candidate therefore holds exactly nine of each digit 1–9, just like the real solution. Only
+          the arrangement can be wrong.
+        </li>
+        <li>
+          <strong>Fitness.</strong> Each row, column and 3×3 box adds one point for every digit it is
+          missing, which is the same as one point per repeated digit. A fitness of 0 means no rule is
+          broken: the puzzle is solved. Lower is better.
+        </li>
+        <li>
+          <strong>Selection.</strong> Each generation keeps the best
+          <span data-option="eliteFraction"></span> of the population unchanged. The rest are bred from
+          parents chosen by tournament: pick <span data-option="tournamentSize"></span> candidates at
+          random and keep the fittest.
+        </li>
+        <li>
+          <strong>Mutation.</strong> A child starts as a copy of its parent. About half of the children
+          then get the digits in two of the puzzle's empty cells swapped, so the givens never move and
+          the digit counts never change. One of the two cells is always one whose digit clashes with
+          another cell in its row, column or box, which points the search at the mistakes. Some children
+          get several swaps in a row.
+        </li>
+        <li>
+          <strong>Restarts.</strong> Candidates can get stuck close to a solution, typically at fitness
+          2, where no single swap helps. If the best fitness hasn't improved for
+          <span data-option="stagnationLimit"></span> generations, the population is replaced with fresh
+          random boards.
+        </li>
+      </ol>
+      <p>
+        Crossover, which combines two parents into one child, is part of the textbook algorithm. It is
+        turned off here because mixing two boards tends to break up the rows and boxes each parent
+        already had right, and in tests it made solving slower. The population size is
+        <span data-option="populationSize"></span>.
+      </p>
+    </section>
+  </main>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
