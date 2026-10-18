@@ -3,95 +3,128 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Genetic Sudoku</title>
+  <title>Sudoku Techniques</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main>
-    <h1>Genetic Sudoku</h1>
-    <blockquote>
-      <p>This is reproduction of an algorithm I designed at university during an AI course in 2007.</p>
-    </blockquote>
-    <p class="lede">
-      A genetic algorithm solves the puzzle. Each candidate is a full board with nine of every digit;
-      mutation swaps two non-fixed cells. Fitness counts rule violations, and 0 means solved.
-    </p>
+    <header>
+      <h1>Sudoku Techniques</h1>
+      <p class="lede">
+        Learn the techniques people use to solve Sudoku. At each step the board is analysed, the
+        easiest technique that makes progress is found, and you either apply it yourself (Manual)
+        or watch it applied (Auto).
+      </p>
+    </header>
 
-    <div class="controls">
+    <div class="toolbar">
       <label>
         Difficulty
-        <select id="difficulty">
-          <option value="45" selected>Easy (45 givens)</option>
-          <option value="40">Medium (40 givens)</option>
-          <option value="34">Hard (34 givens)</option>
+        <select id="level">
+          <option value="easy" selected>Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+          <option value="expert">Expert</option>
         </select>
       </label>
-      <button id="new">New board</button>
-      <button id="solve" class="primary">Solve</button>
+      <button id="new">New puzzle</button>
+      <div class="segmented" role="radiogroup" aria-label="Mode">
+        <button role="radio" data-mode="manual" aria-checked="true">Manual</button>
+        <button role="radio" data-mode="auto" aria-checked="false">Auto</button>
+      </div>
     </div>
 
-    <div id="board" class="board" aria-label="Sudoku board"></div>
+    <div class="workspace">
+      <div class="board-wrap">
+        <div class="col-labels" aria-hidden="true"></div>
+        <div class="row-labels" aria-hidden="true"></div>
+        <div id="board" class="board" role="grid" aria-label="Sudoku board"></div>
+      </div>
 
-    <dl class="stats">
-      <div><dt>Generation</dt><dd id="generation">0</dd></div>
-      <div><dt>Min fitness</dt><dd id="fitness">–</dd></div>
-      <div><dt>Best ever</dt><dd id="best">–</dd></div>
-      <div><dt>Restarts</dt><dd id="restarts">0</dd></div>
-    </dl>
-    <p id="status" class="status"></p>
+      <aside class="panel">
+        <div id="inspect-bar" class="inspect-bar" hidden>
+          <span id="inspect-label"></span>
+          <span class="inspect-nav">
+            <button id="inspect-prev" aria-label="Previous step">◀</button>
+            <button id="inspect-next" aria-label="Next step">▶</button>
+            <button id="inspect-close">Back to current</button>
+          </span>
+        </div>
 
-    <section>
-      <h2>Best chromosome</h2>
-      <p class="hint">The current best individual, row by row. Fixed digits from the puzzle are dimmed.</p>
-      <div id="chromosome" class="chromosome"></div>
+        <section id="step-card" class="card" aria-live="polite">
+          <div class="card-head">
+            <h2 id="step-title">Next step</h2>
+            <span id="step-tier" class="tier" hidden></span>
+          </div>
+          <p id="step-how" class="how" hidden></p>
+          <p id="step-text" class="step-text"></p>
+          <div id="manual-actions" class="actions">
+            <button id="hint">Hint</button>
+            <button id="show">Show me</button>
+            <button id="do">Do it for me</button>
+          </div>
+          <div id="auto-actions" class="actions" hidden>
+            <button id="play" class="primary">Play</button>
+            <button id="next">Show next step</button>
+            <label class="speed">Speed <input id="speed" type="range" min="1" max="10" value="4"></label>
+          </div>
+          <div id="problem-actions" class="actions" hidden>
+            <button id="undo-mistake" class="primary">Undo to before the first mistake</button>
+          </div>
+        </section>
+
+        <section id="input" class="card input">
+          <div class="segmented small" role="radiogroup" aria-label="Input">
+            <button role="radio" data-input="place" aria-checked="true">Digit</button>
+            <button role="radio" data-input="remove" aria-checked="false">Candidate</button>
+          </div>
+          <div id="keypad" class="keypad"></div>
+          <p class="hint-keys">
+            Select a cell, then type a digit to place it. Shift+digit, or Candidate mode, removes a
+            candidate. Arrow keys move. <kbd>N</kbd> switches input mode.
+          </p>
+        </section>
+
+        <div class="row-buttons">
+          <button id="undo">Undo</button>
+        </div>
+        <p id="message" class="message" role="status"></p>
+      </aside>
+    </div>
+
+    <section class="timeline-section">
+      <div class="section-head">
+        <h2>Timeline</h2>
+        <div class="legend" aria-hidden="true">
+          <span><i class="dot you"></i>You</span>
+          <span><i class="dot auto"></i>Auto</span>
+          <span><i class="mark-mistake">×</i>Mistake</span>
+        </div>
+      </div>
+      <p class="hint">Each dot is one step, left to right; each row is a technique. Click a dot to see the board at that step.</p>
+      <dl id="stats" class="stats"></dl>
+      <div id="timeline" class="timeline"></div>
+      <details class="table-view">
+        <summary>Show as table</summary>
+        <table>
+          <thead><tr><th>#</th><th>Technique</th><th>By</th><th>Note</th></tr></thead>
+          <tbody id="timeline-table"></tbody>
+        </table>
+      </details>
     </section>
 
-    <section class="explainer">
-      <h2>How the algorithm works</h2>
-      <p>
-        A genetic algorithm keeps a population of candidate boards and improves them over many
-        generations. It copies the better ones with small random changes, and the worse ones die out.
+    <section class="reference">
+      <h2>Techniques in this demo</h2>
+      <p class="hint">
+        Notation: <code>r4c6</code> is row 4, column 6. Boxes are numbered 1–9, left to right and top
+        to bottom. <em>Candidates</em> are the small digits still possible in an empty cell. The
+        <a href="docs/techniques.md">full list of known techniques</a> shows where these sit among
+        the rest.
       </p>
-      <ol>
-        <li>
-          <strong>Candidates.</strong> Each candidate is a complete 81-cell board. The puzzle's given
-          digits stay in their cells, and the remaining digits are shuffled over the empty cells. Every
-          candidate therefore holds exactly nine of each digit 1–9, just like the real solution. Only
-          the arrangement can be wrong.
-        </li>
-        <li>
-          <strong>Fitness.</strong> Each row, column and 3×3 box adds one point for every digit it is
-          missing, which is the same as one point per repeated digit. A fitness of 0 means no rule is
-          broken: the puzzle is solved. Lower is better.
-        </li>
-        <li>
-          <strong>Selection.</strong> Each generation keeps the best
-          <span data-option="eliteFraction"></span> of the population unchanged. The rest are bred from
-          parents chosen by tournament: pick <span data-option="tournamentSize"></span> candidates at
-          random and keep the fittest.
-        </li>
-        <li>
-          <strong>Mutation.</strong> A child starts as a copy of its parent. About half of the children
-          then get the digits in two of the puzzle's empty cells swapped, so the givens never move and
-          the digit counts never change. One of the two cells is always one whose digit clashes with
-          another cell in its row, column or box, which points the search at the mistakes. Some children
-          get several swaps in a row.
-        </li>
-        <li>
-          <strong>Restarts.</strong> Candidates can get stuck close to a solution, typically at fitness
-          2, where no single swap helps. If the best fitness hasn't improved for
-          <span data-option="stagnationLimit"></span> generations, the population is replaced with fresh
-          random boards.
-        </li>
-      </ol>
-      <p>
-        Crossover, which combines two parents into one child, is part of the textbook algorithm. It is
-        turned off here because mixing two boards tends to break up the rows and boxes each parent
-        already had right, and in tests it made solving slower. The population size is
-        <span data-option="populationSize"></span>.
-      </p>
+      <div id="reference" class="reference-grid"></div>
     </section>
   </main>
-  <script type="module" src="js/main.js"></script>
+  <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

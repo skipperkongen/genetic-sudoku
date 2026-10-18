@@ -17,7 +17,7 @@ export const UNITS = (() => {
 })();
 
 // For each cell, the indices of the cells it shares a unit with.
-const PEERS = (() => {
+export const PEERS = (() => {
   const peers = [...Array(SIZE)].map(() => new Set());
   for (const unit of UNITS) {
     for (const i of unit) for (const j of unit) if (i !== j) peers[i].add(j);
